@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SymptoAI | Dashboard</title>
+<style>
+  /* ===== BASIC RESET ===== */
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+  body { background: #1e1e2f; color: #fff; min-height: 100vh; display: flex; flex-direction: column; position: relative; }
+  body.light-mode { background: #f5f5f5; color: #111; }
+
+  /* ===== BUTTONS ===== */
+  .btn { padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+  .btn.primary { background-color: #4caf50; color: white; }
+  .btn.secondary { background-color: #333; color: white; }
+  body.light-mode .btn.secondary { background-color: #ddd; color: #111; }
+  .btn.link-btn { background: none; border: none; color: #4caf50; text-decoration: underline; font-size: 14px; cursor: pointer; }
+
+  /* ===== TABS ===== */
+  .tab-content { padding: 20px; flex: 1; display: none; }
+  .tab-content.active { display: block; }
+
+  /* ===== BOTTOM NAV ===== */
+  .bottom-nav { display: flex; justify-content: space-around; background: rgba(30,30,50,0.8); backdrop-filter: blur(10px); padding: 10px 0; position: sticky; bottom: 0; width: 100%; }
+  .nav-btn { background: none; border: none; color: white; font-size: 16px; cursor: pointer; transition: 0.2s; }
+  .nav-btn.active { font-weight: bold; text-decoration: underline; }
+  body.light-mode .bottom-nav { background: rgba(245,245,245,0.8); }
+  body.light-mode .nav-btn { color: #111; }
+
+  /* ===== GLASS INPUTS ===== */
+  .glass-input { display: block; width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff; }
+  body.light-mode .glass-input { background: rgba(255,255,255,0.6); color: #111; }
+
+  /* ===== SYMPTOM TRACKER TABLE ===== */
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 8px; border: 1px solid rgba(255,255,255,0.2); text-align: left; }
+  body.light-mode th, body.light-mode td { border-color: rgba(0,0,0,0.2); }
+
+  /* ===== CARD ===== */
+  .card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; backdrop-filter: blur(10px); }
+  body.light-mode .card { background: rgba(255,255,255,0.8); color: #111; }
+
+  /* ===== THEME TOGGLE ===== */
+  #themeToggle { position: absolute; top: 20px; right: 20px; font-size: 12px; }
+/* ===== CHATBOT STYLES ===== */
+#chatbot-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+#chatbot-icon {
+  background: #4caf50;
+  color: white;
+  font-size: 24px;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+}
+#chatbot-icon:hover {
+  transform: scale(1.1);
+}
+
+#chatbot-window {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  width: 320px;
+  height: 420px;
+  background: rgba(30, 30, 50, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+body.light-mode #chatbot-window {
+  background: #fff;
+  color: #111;
+}
+.hidden {
+  display: none;
+}
+
+#chat-header {
+  background: #4caf50;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+#chat-messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.message {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  max-width: 80%;
+}
+.message.user {
+  background: #4caf50;
+  color: white;
+  align-self: flex-end;
+}
+.message.bot {
+  background: rgba(255,255,255,0.1);
+  align-self: flex-start;
+}
+
+#chat-input {
+  display: flex;
+  padding: 10px;
+  background: rgba(255,255,255,0.05);
+}
+#chat-input input {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  margin-right: 6px;
+}
+#chat-input button {
+  padding: 8px 12px;
+  border: none;
+  background: #4caf50;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cup.full {
+  background-color: #4caf50;
+  color: white;
+  box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
+}
+</style>
+</head>
+<body>
+
+<!-- THEME TOGGLE -->
+<button id="themeToggle" class="btn secondary">Toggle Theme</button>
+
+<!-- HOME TAB -->
+<div class="tab-content active" id="homeTab">
+  <h2 id="welcomeMsg">Welcome back!</h2>
+  <p>Track your health smarter with SymptoAI.</p>
+</div>
+<!-- HOME TAB -->
+<div class="tab-content active" id="homeTab">
+  <div class="card" style="text-align:center; margin-bottom:20px;">
+    <h2 id="welcomeMsg">Hi Mahek 👋</h2>
+    <p style="opacity:0.9;">Hope you’re feeling great today! 💚</p>
+  </div>
+
+  <div class="home-summary" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:15px;">
+    <div class="card" style="text-align:center;">
+      <h3>😊 Mood</h3>
+      <p id="currentMood" style="font-size:20px; font-weight:bold;">Happy</p>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <h3>🌙 Last Sleep</h3>
+      <p id="lastSleep" style="font-size:20px; font-weight:bold;">7 hrs</p>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <h3>💧 Hydration</h3>
+      <p id="hydrationStatus" style="font-size:20px; font-weight:bold;">1.5L / 2L</p>
+    </div>
+  </div>
+</div>
+
+<!-- 🔍 SEARCH TAB -->
+<div class="tab-content" id="searchTab">
+  <div class="search-container card" style="padding:22px; border-radius:14px; max-width:980px; margin:0 auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:220px;">
+        <h2 style="margin-bottom:6px;">🔍 Explore Health Insights</h2>
+        <p style="margin:0;opacity:0.85;">Search symptoms, tips, or quick guides — or use voice.</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="voiceBtn" class="btn secondary" title="Voice search" style="padding:8px 12px;border-radius:10px;">🎤 Voice</button>
+      </div>
+    </div>
+
+    <!-- search row -->
+    <div style="display:flex;gap:12px;margin-top:16px;">
+      <input id="searchInput" type="text" placeholder="Try “sleep tips”, “healthy meals”, or “mood boost”"
+             style="flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);
+             background:transparent;color:inherit;font-size:15px;">
+      <button id="searchBtn" class="btn primary" style="padding:11px 16px;border-radius:12px;">Search</button>
+    </div>
+
+    <!-- filters -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:18px;">
+      <select id="filter" class="glass-input" style="padding:10px;border-radius:10px;">
+        <option value="all">All Categories</option>
+        <option value="sleep">Sleep Tips 😴</option>
+        <option value="meals">Healthy Meals 🍎</option>
+        <option value="mood">Mood Boost 💛</option>
+      </select>
+
+      <select id="subFilter" class="glass-input" style="padding:10px;border-radius:10px;">
+        <option value="">Quick Filters</option>
+        <option value="hydration">Hydration</option>
+        <option value="exercise">Light Exercise</option>
+        <option value="stress">Stress Relief</option>
+      </select>
+
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn secondary" id="clearFilters" style="width:100%;padding:10px;border-radius:10px;">Clear</button>
+      </div>
+    </div>
+
+    <!-- quick suggestions -->
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn" onclick="showCategory('sleep')" 
+              style="background:transparent;border:1px solid rgba(255,255,255,0.06);
+              border-radius:10px;padding:8px 12px;">😴 Sleep Tips</button>
+      <button class="btn" onclick="showCategory('meals')" 
+              style="background:transparent;border:1px solid rgba(255,255,255,0.06);
+              border-radius:10px;padding:8px 12px;">🍎 Healthy Meals</button>
+      <button class="btn" onclick="showCategory('mood')" 
+              style="background:transparent;border:1px solid rgba(255,255,255,0.06);
+              border-radius:10px;padding:8px 12px;">💛 Mood Boost</button>
+    </div>
+
+    <!-- results -->
+    <div id="searchResults" class="search-results" 
+         style="margin-top:18px;padding:14px;border-radius:12px;
+         background:rgba(255,255,255,0.03);min-height:140px;">
+      <p class="placeholder" style="opacity:0.7;">Start by typing, using voice, or choosing a suggestion above ✨</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- TRACKER TAB -->
+<div class="tab-content" id="trackerTab">
+  <div class="symptom-tracker card">
+    <h2>📋 Symptom Tracker</h2>
+
+    <label for="symptomDate">Date:</label>
+    <input type="date" id="symptomDate" class="glass-input">
+
+    <p>Select your symptoms:</p>
+    <div id="symptomsList">
+      <label><input type="checkbox" value="Fever"> Fever</label><br>
+      <label><input type="checkbox" value="Headache"> Headache</label><br>
+      <label><input type="checkbox" value="Fatigue"> Fatigue</label><br>
+      <label><input type="checkbox" value="Cough"> Cough</label><br>
+      <label><input type="checkbox" value="Sore throat"> Sore throat</label><br>
+      <label><input type="checkbox" value="Nausea"> Nausea</label><br>
+    </div>
+
+    <label for="severity">Severity:</label>
+    <select id="severity" class="glass-input">
+      <option value="">Select severity</option>
+      <option value="Mild">Mild</option>
+      <option value="Moderate">Moderate</option>
+      <option value="Severe">Severe</option>
+    </select>
+
+    <button id="saveSymptom" class="btn primary">Save Entry</button>
+
+    <h3>Last 5 Entries:</h3>
+    <table id="symptomHistory">
+      <thead>
+        <tr><th>Date</th><th>Symptoms</th><th>Severity</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+<!-- 🧮 BMI Tracker -->
+<div class="card" id="bmiTrackerCard">
+  <div class="bmi-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>🧮 BMI Tracker</h2>
+    <button id="toggleBmi" class="btn secondary" style="font-size: 14px; padding: 5px 10px;">
+      ▼
+    </button>
+  </div>
+
+  <div id="bmiContent" style="display: none; margin-top: 10px;">
+    <p>Calculate your Body Mass Index (BMI)</p>
+
+    <div class="bmi-container" style="margin-top: 10px;">
+      <label for="height">Height (cm):</label>
+      <input type="number" id="height" placeholder="Enter height in cm" style="width:100%;padding:8px;margin-bottom:10px;">
+
+      <label for="weight">Weight (kg):</label>
+      <input type="number" id="weight" placeholder="Enter weight in kg" style="width:100%;padding:8px;margin-bottom:10px;">
+
+      <button class="btn primary" id="calculateBMI" style="width:100%;">Calculate BMI</button>
+      <button class="btn secondary" id="resetBtn" style="width:100%; margin-top:8px;">Reset</button>
+
+      <div id="resultCard" class="hidden" style="margin-top:15px; text-align:center;">
+        <h3 id="bmiValue" style="margin-bottom:6px;"></h3>
+        <p id="bmiMessage"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 😊 Mood Tracker -->
+<div class="card" id="moodTrackerCard">
+  <div class="mood-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>😊 Mood Tracker</h2>
+    <button id="toggleMood" class="btn secondary" style="font-size: 14px; padding: 5px 10px;">▼</button>
+  </div>
+
+  <div id="moodContent" style="display: none; margin-top: 10px;">
+    <p>Track your emotions and see how your mood changes over time.</p>
+
+    <div class="mood-tracker">
+      <label for="moodDate">Date:</label>
+      <input type="date" id="moodDate" class="glass-input">
+
+      <label for="moodSelect">Mood:</label>
+      <select id="moodSelect" class="glass-input">
+        <option value="">Select your mood</option>
+        <option value="😄">Happy 😄</option>
+        <option value="😢">Sad 😢</option>
+        <option value="😐">Neutral 😐</option>
+        <option value="😠">Angry 😠</option>
+        <option value="🤩">Excited 🤩</option>
+      </select>
+
+      <label for="moodNote">Notes:</label>
+      <textarea id="moodNote" class="glass-input" placeholder="Write your thoughts..."></textarea>
+
+      <button id="saveMood" class="btn primary" style="width:100%;">Save Mood</button>
+
+      <h3 style="margin-top: 15px;">Recent Entries:</h3>
+      <table id="moodHistory">
+        <thead>
+          <tr><th>Date</th><th>Mood</th><th>Notes</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <canvas id="moodChart"></canvas>
+<h3 style="margin-top: 15px;">Mood Overview:</h3>
+<canvas id="moodChart" width="300" height="300"></canvas>
+
+    </div>
+  </div>
+</div>
+<!-- 🌙 Sleep Tracker -->
+<div class="card" id="sleepTrackerCard">
+  <div class="sleep-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>🌙 Sleep Tracker</h2>
+    <button id="toggleSleep" class="btn secondary" style="font-size: 14px; padding: 5px 10px;">▼</button>
+  </div>
+
+  <div id="sleepContent" style="display: none; margin-top: 10px;">
+    <p>Track your sleep duration and maintain a healthy rest schedule.</p>
+
+    <label for="sleepTime">Sleep Time:</label>
+    <input type="time" id="sleepTime" class="glass-input">
+
+    <label for="wakeTime">Wake Time:</label>
+    <input type="time" id="wakeTime" class="glass-input">
+
+    <button id="calcSleep" class="btn primary" style="width:100%; margin-top:10px;">Calculate Sleep</button>
+    <button id="resetSleep" class="btn secondary" style="width:100%; margin-top:8px;">Reset</button>
+
+    <div id="sleepResult" style="margin-top:15px; text-align:center;">
+      <h3>Sleep Duration: <span id="sleepDuration">0</span> hours</h3>
+      <p id="sleepMessage"></p>
+    </div>
+
+    <h3 style="margin-top:15px;">Recent Sleep Records:</h3>
+    <table id="sleepHistory">
+      <thead>
+        <tr><th>Date</th><th>Sleep</th><th>Wake</th><th>Duration (hrs)</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+<!-- 💧 Hydration Tracker -->
+<div class="card" id="hydrationTrackerCard">
+  <div class="hydration-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>💧 Hydration Tracker</h2>
+    <button id="toggleHydration" class="btn secondary" style="font-size: 14px; padding: 5px 10px;">▼</button>
+  </div>
+
+  <div id="hydrationContent" style="display: none; margin-top: 10px;">
+    <p>Track your daily water intake goal (2L per day).</p>
+
+    <div class="cup-container" style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:12px 0;">
+      <div class="cup small" style="width:60px;height:80px;border:2px solid #4caf50;border-radius:0 0 10px 10px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:0.3s;">250ml</div>
+      <div class="cup small" style="width:60px;height:80px;border:2px solid #4caf50;border-radius:0 0 10px 10px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:0.3s;">250ml</div>
+      <div class="cup small" style="width:60px;height:80px;border:2px solid #4caf50;border-radius:0 0 10px 10px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:0.3s;">250ml</div>
+      <div class="cup small" style="width:60px;height:80px;border:2px solid #4caf50;border-radius:0 0 10px 10px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:0.3s;">250ml</div>
+      <div class="cup small" style="width:60px;height:80px;border:2px solid #4caf50;border-radius:0 0 10px 10px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:0.3s;">250ml</div>
+      <div class="cup small" style="width:60px;height:80px;border:2px solid #4caf50;border-radius:0 0 10px 10px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:0.3s;">250ml</div>
+      <div class="cup small" style="width:60px;height:80px;border:2px solid #4caf50;border-radius:0 0 10px 10px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:0.3s;">250ml</div>
+      <div class="cup small" style="width:60px;height:80px;border:2px solid #4caf50;border-radius:0 0 10px 10px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;transition:0.3s;">250ml</div>
+    </div>
+
+    <div class="big-cup" style="position:relative;width:150px;height:250px;border:3px solid #4caf50;border-radius:0 0 20px 20px;margin:0 auto;overflow:hidden;">
+      <div id="percentage" style="background-color:#4caf50;height:0%;width:100%;position:absolute;bottom:0;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;transition:0.3s;"></div>
+      <p id="remained" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;">2L remaining</p>
+    </div>
+
+    <button id="resetHydration" class="btn secondary" style="width:100%;margin-top:10px;">Reset</button>
+  </div>
+</div>
+
+</div>
+
+  </div>
+
+<!-- PROFILE TAB -->
+<div class="tab-content" id="profileTab">
+  <h2>👤 Profile</h2>
+  <button id="editProfileBtn" class="btn link-btn">Edit Profile</button>
+
+  <div id="profileDetails" style="display:none; margin-top:10px;">
+    <form id="editProfileForm" class="card">
+      <label>Full Name *</label>
+      <input type="text" id="editName" class="glass-input" required>
+      <label>Age *</label>
+      <input type="number" id="editAge" class="glass-input" required>
+      <label>Gender</label>
+      <select id="editGender" class="glass-input">
+        <option value="">Select</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+        <option value="Prefer not to say">Prefer not to say</option>
+      </select>
+      <label>Height (cm) *</label>
+      <input type="number" id="editHeight" class="glass-input" required>
+      <label>Weight (kg) *</label>
+      <input type="number" id="editWeight" class="glass-input" required>
+      <label>Activity Level</label>
+      <select id="editActivity" class="glass-input">
+        <option value="">Select</option>
+        <option value="Sedentary">Sedentary</option>
+        <option value="Light">Light</option>
+        <option value="Moderate">Moderate</option>
+        <option value="Active">Active</option>
+        <option value="Very Active">Very Active</option>
+      </select>
+      <label>Dietary Preference</label>
+      <select id="editDiet" class="glass-input">
+        <option value="">Select</option>
+        <option value="Vegetarian">Vegetarian</option>
+        <option value="Vegan">Vegan</option>
+        <option value="Non-Vegetarian">Non-Vegetarian</option>
+        <option value="Keto">Keto</option>
+        <option value="Other">Other</option>
+      </select>
+      <label>Medical Conditions</label>
+      <input type="text" id="editConditions" class="glass-input">
+      <label>Fitness Goal</label>
+      <select id="editGoal" class="glass-input">
+        <option value="">Select</option>
+        <option value="Lose weight">Lose weight</option>
+        <option value="Maintain">Maintain</option>
+        <option value="Gain muscle">Gain muscle</option>
+        <option value="Wellness">Wellness</option>
+      </select>
+      <button type="submit" class="btn primary">Save Changes</button>
+    </form>
+  </div>
+
+  <button id="logoutBtn" class="btn secondary" style="margin-top:20px;">Logout</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" data-tab="homeTab">🏠 Home</button>
+  <button class="nav-btn" data-tab="searchTab">🔍 Search</button>
+  <button class="nav-btn" data-tab="trackerTab">📋 Tracker</button>
+  <button class="nav-btn" data-tab="profileTab">👤 Profile</button>
+</div>
+
+<script>
+const themeToggle = document.getElementById('themeToggle');
+const navButtons = document.querySelectorAll('.nav-btn');
+const tabs = document.querySelectorAll('.tab-content');
+const saveBtn = document.getElementById("saveSymptom");
+const symptomDate = document.getElementById("symptomDate");
+const symptomHistory = document.querySelector("#symptomHistory tbody");
+const severitySelect = document.getElementById("severity");
+const editProfileBtn = document.getElementById('editProfileBtn');
+const profileDetails = document.getElementById('profileDetails');
+const editProfileForm = document.getElementById('editProfileForm');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// ===== THEME TOGGLE =====
+if(themeToggle){
+  if(localStorage.getItem('theme')==='light') document.body.classList.add('light-mode');
+  themeToggle.addEventListener('click',()=>{
+    document.body.classList.toggle('light-mode');
+    localStorage.setItem('theme', document.body.classList.contains('light-mode')?'light':'dark');
+  });
+}
+
+// ===== NAVBAR SWITCH =====
+navButtons.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    navButtons.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    tabs.forEach(tab=>tab.classList.remove('active'));
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ===== USER EMAIL =====
+const email = sessionStorage.getItem('loggedInUser');
+if(!email) alert("No user logged in!");
+
+// ===== SYMPTOM TRACKER =====
+if(symptomDate) symptomDate.valueAsDate = new Date();
+function loadSymptoms(){
+  const data = JSON.parse(localStorage.getItem("symptoms_" + email) || "[]");
+  symptomHistory.innerHTML="";
+  data.slice(-5).reverse().forEach(entry=>{
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${entry.date}</td><td>${entry.symptoms.join(", ")}</td><td>${entry.severity}</td>`;
+    symptomHistory.appendChild(row);
+  });
+}
+if(saveBtn){
+  saveBtn.addEventListener("click",()=>{
+    const date = symptomDate.value;
+    const severity = severitySelect.value;
+    const symptoms = Array.from(document.querySelectorAll("#symptomsList input:checked")).map(cb=>cb.value);
+    if(!date || !severity || symptoms.length===0) return alert("Please fill all fields & select symptoms.");
+    const allData = JSON.parse(localStorage.getItem("symptoms_" + email) || "[]");
+    allData.push({date,symptoms,severity});
+    localStorage.setItem("symptoms_" + email, JSON.stringify(allData));
+    alert("✅ Symptom entry saved!");
+    loadSymptoms();
+    document.querySelectorAll("#symptomsList input").forEach(cb=>cb.checked=false);
+    severitySelect.value="";
+    symptomDate.valueAsDate = new Date();
+  });
+}
+loadSymptoms();
+
+// ===== EDIT PROFILE =====
+function loadProfileIntoForm(){
+  const profile = JSON.parse(localStorage.getItem("user_profile_" + email) || "{}");
+  document.getElementById('editName').value = profile.name || '';
+  document.getElementById('editAge').value = profile.age || '';
+  document.getElementById('editGender').value = profile.gender || '';
+  document.getElementById('editHeight').value = profile.height || '';
+  document.getElementById('editWeight').value = profile.weight || '';
+  document.getElementById('editActivity').value = profile.activity || '';
+  document.getElementById('editDiet').value = profile.diet || '';
+  document.getElementById('editConditions').value = profile.conditions || '';
+  document.getElementById('editGoal').value = profile.goal || '';
+  // Update welcome message
+  const welcomeMsg = document.getElementById('welcomeMsg');
+  if(welcomeMsg) welcomeMsg.textContent = `Welcome back, ${profile.name || 'User'}! 💙`;
+}
+if(editProfileBtn){
+  editProfileBtn.addEventListener('click', ()=>{
+    profileDetails.style.display = profileDetails.style.display==='none'?'block':'none';
+    if(profileDetails.style.display==='block') loadProfileIntoForm();
+  });
+}
+if(editProfileForm){
+  editProfileForm.addEventListener('submit', e=>{
+    e.preventDefault();
+    if(!confirm("Are you sure you want to save these changes?")) return;
+    const updatedProfile = {
+      name: document.getElementById('editName').value.trim(),
+      age: document.getElementById('editAge').value.trim(),
+      gender: document.getElementById('editGender').value,
+      height: document.getElementById('editHeight').value.trim(),
+      weight: document.getElementById('editWeight').value.trim(),
+      activity: document.getElementById('editActivity').value,
+      diet: document.getElementById('editDiet').value,
+      conditions: document.getElementById('editConditions').value.trim(),
+      goal: document.getElementById('editGoal').value
+    };
+    localStorage.setItem("user_profile_" + email, JSON.stringify(updatedProfile));
+    alert("✅ Profile updated successfully!");
+    profileDetails.style.display='none';
+    loadProfileIntoForm();
+  });
+}
+
+// ===== LOGOUT =====
+if(logoutBtn){
+  logoutBtn.addEventListener('click', ()=>{
+    sessionStorage.removeItem('loggedInUser');
+    window.location.href='index.html';
+  });
+}
+
+// ===== LOAD PROFILE ON PAGE LOAD =====
+if(email) loadProfileIntoForm();
+</script>
+<script>
+// === 🌙 Sleep Tracker Script ===
+document.addEventListener("DOMContentLoaded", function () {
+  const toggleSleep = document.getElementById("toggleSleep");
+  const sleepContent = document.getElementById("sleepContent");
+  const calcSleep = document.getElementById("calcSleep");
+  const resetSleep = document.getElementById("resetSleep");
+  const sleepTime = document.getElementById("sleepTime");
+  const wakeTime = document.getElementById("wakeTime");
+  const sleepDuration = document.getElementById("sleepDuration");
+  const sleepMessage = document.getElementById("sleepMessage");
+  const sleepHistory = document.querySelector("#sleepHistory tbody");
+  const email = sessionStorage.getItem("loggedInUser") || "guest";
+
+  // 💤 Toggle dropdown visibility
+  toggleSleep.addEventListener("click", () => {
+    const isHidden = sleepContent.style.display === "none" || sleepContent.style.display === "";
+    sleepContent.style.display = isHidden ? "block" : "none";
+    toggleSleep.textContent = isHidden ? "▲" : "▼";
+  });
+
+  // 🗓 Load & Save Sleep History
+  function loadSleepHistory() {
+    const data = JSON.parse(localStorage.getItem("sleep_history_" + email) || "[]");
+    sleepHistory.innerHTML = "";
+    data.slice(0, 5).forEach(entry => {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${entry.date}</td><td>${entry.sleep}</td><td>${entry.wake}</td><td>${entry.duration}</td>`;
+      sleepHistory.appendChild(row);
+    });
+  }
+
+  function saveSleepEntry(entry) {
+    const allData = JSON.parse(localStorage.getItem("sleep_history_" + email) || "[]");
+    allData.unshift(entry);
+    if (allData.length > 5) allData.pop();
+    localStorage.setItem("sleep_history_" + email, JSON.stringify(allData));
+  }
+
+  // 🕒 Calculate Sleep Duration
+  calcSleep.addEventListener("click", () => {
+    const sleepVal = sleepTime.value;
+    const wakeVal = wakeTime.value;
+    if (!sleepVal || !wakeVal) {
+      alert("Please select both Sleep and Wake times!");
+      return;
+    }
+
+    const today = new Date();
+    const baseDate = today.toISOString().split("T")[0];
+    const sleepDate = new Date(`${baseDate}T${sleepVal}:00`);
+    let wakeDate = new Date(`${baseDate}T${wakeVal}:00`);
+    if (wakeDate <= sleepDate) wakeDate.setDate(wakeDate.getDate() + 1);
+
+    const diff = (wakeDate - sleepDate) / (1000 * 60 * 60);
+    const duration = Math.round(diff * 10) / 10;
+    sleepDuration.textContent = duration;
+
+    let msg = "";
+    if (duration < 3) msg = "⚠️ Too little sleep — rest more!";
+    else if (duration < 6) msg = "😴 You need more rest!";
+    else if (duration < 8) msg = "🌙 Good sleep duration!";
+    else msg = "🛌 You're well-rested!";
+    sleepMessage.textContent = msg;
+
+    const entry = { date: new Date().toLocaleDateString(), sleep: sleepVal, wake: wakeVal, duration };
+    saveSleepEntry(entry);
+    loadSleepHistory();
+  });
+
+  // 🔁 Reset Sleep Form
+  resetSleep.addEventListener("click", () => {
+    sleepTime.value = "";
+    wakeTime.value = "";
+    sleepDuration.textContent = "0";
+    sleepMessage.textContent = "";
+  });
+
+  // Load history on start
+  loadSleepHistory();
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const toggleHydration = document.getElementById("toggleHydration");
+  const hydrationContent = document.getElementById("hydrationContent");
+  const smallCups = document.querySelectorAll(".cup.small");
+  const liters = document.getElementById("remained");
+  const percentage = document.getElementById("percentage");
+  const resetBtn = document.getElementById("resetHydration");
+
+  // Toggle dropdown visibility
+  toggleHydration.addEventListener("click", () => {
+    const isHidden = hydrationContent.style.display === "none" || hydrationContent.style.display === "";
+    hydrationContent.style.display = isHidden ? "block" : "none";
+    toggleHydration.textContent = isHidden ? "▲" : "▼";
+  });
+
+  // Cup click functionality
+  smallCups.forEach((cup, idx) => {
+    cup.addEventListener("click", () => highlightCups(idx));
+  });
+
+  function highlightCups(idx) {
+    if (smallCups[idx].classList.contains("full") && !smallCups[idx].nextElementSibling?.classList.contains("full")) {
+      idx--;
+    }
+    smallCups.forEach((cup, i) => {
+      if (i <= idx) cup.classList.add("full");
+      else cup.classList.remove("full");
+    });
+    updateBigCup();
+  }
+
+  function updateBigCup() {
+    const fullCups = document.querySelectorAll(".cup.full").length;
+    const totalCups = smallCups.length;
+
+    if (fullCups === 0) {
+      percentage.style.height = 0;
+      percentage.textContent = "";
+    } else {
+      const percent = (fullCups / totalCups) * 100;
+      percentage.style.height = percent + "%";
+      percentage.textContent = percent + "%";
+    }
+
+    const remaining = 2 - (fullCups * 0.25);
+    liters.textContent = remaining > 0 ? `${remaining.toFixed(2)}L remaining` : "You're fully hydrated! 💧";
+  }
+
+  resetBtn.addEventListener("click", () => {
+    smallCups.forEach(cup => cup.classList.remove("full"));
+    updateBigCup();
+  });
+});
+</script>
+
+
+<!-- 💬 Chatbot -->
+<div id="chatbot-container">
+  <div id="chatbot-icon">🤖</div>
+
+  <div id="chatbot-window" class="hidden">
+    <div id="chat-header">
+      <span>SymptoAI Bot</span>
+      <span id="close-chat" style="cursor:pointer;">✖</span>
+    </div>
+    <div id="chat-messages"></div>
+    <div id="chat-input">
+      <input type="text" id="user-input" placeholder="Type your message..." />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+</div>
+<script>
+// 💬 Chatbot open/close functionality
+document.addEventListener("DOMContentLoaded", function () {
+  const chatIcon = document.getElementById("chatbot-icon");
+  const chatWindow = document.getElementById("chatbot-window");
+  const closeChat = document.getElementById("close-chat");
+
+  if (chatIcon && chatWindow) {
+    chatIcon.addEventListener("click", () => {
+      chatWindow.classList.toggle("hidden");
+    });
+  }
+
+  if (closeChat && chatWindow) {
+    closeChat.addEventListener("click", () => {
+      chatWindow.classList.add("hidden");
+    });
+  }
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="script.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const botIcon = document.getElementById("chatbot-icon");
+  const chatWindow = document.getElementById("chatbot-window");
+  const closeBtn = document.getElementById("close-chat");
+
+  if (botIcon && chatWindow) {
+    botIcon.addEventListener("click", () => {
+      if (chatWindow.style.display === "flex") {
+        chatWindow.style.display = "none";
+      } else {
+        chatWindow.style.display = "flex";
+      }
+    });
+  }
+
+  if (closeBtn && chatWindow) {
+    closeBtn.addEventListener("click", () => {
+      chatWindow.style.display = "none";
+    });
+  }
+});
+
+</script>
+<script>
+  const sendBtn = document.getElementById("send-btn");
+  const userInput = document.getElementById("user-input");
+  const chatBox = document.getElementById("chat-box");
+
+  sendBtn.addEventListener("click", () => {
+    const message = userInput.value.trim();
+    if (message === "") return;
+
+    // Show user message
+    const userMsg = document.createElement("div");
+    userMsg.className = "user-message";
+    userMsg.textContent = message;
+    chatBox.appendChild(userMsg);
+
+    userInput.value = "";
+
+    // Dummy bot reply
+    const botMsg = document.createElement("div");
+    botMsg.className = "bot-message";
+    botMsg.textContent = "Thinking...";
+    chatBox.appendChild(botMsg);
+
+    // Example reply delay
+    setTimeout(() => {
+      botMsg.textContent = "This is a bot reply to: " + message;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }, 1000);
+  });
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const sendBtn = document.getElementById("send-btn");
+  const userInput = document.getElementById("user-input");
+  const chatMessages = document.getElementById("chat-messages");
+
+  function addMessage(sender, text) {
+    const msg = document.createElement("div");
+    msg.classList.add("message", sender);
+    msg.textContent = text;
+    chatMessages.appendChild(msg);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function botReply(userText) {
+    userText = userText.toLowerCase();
+    let reply = "I'm not sure I understand. 🤖";
+
+    if (userText.includes("hello") || userText.includes("hi")) {
+      reply = "Hey there! 👋 How can I help you today?";
+    } else if (userText.includes("bmi")) {
+      reply = "You can calculate your BMI under the 'Tracker' tab → BMI Tracker. 🧮";
+    } else if (userText.includes("sleep")) {
+      reply = "Check out the Sleep Tracker to record your sleep schedule. 🌙";
+    } else if (userText.includes("water") || userText.includes("hydration")) {
+      reply = "Stay hydrated! You can track it in the Hydration Tracker 💧.";
+    } else if (userText.includes("bye")) {
+      reply = "Goodbye! Take care 💚";
+    }
+
+    setTimeout(() => addMessage("bot", reply), 500);
+  }
+
+  sendBtn.addEventListener("click", () => {
+    const text = userInput.value.trim();
+    if (text === "") return;
+    addMessage("user", text);
+    userInput.value = "";
+    botReply(text);
+  });
+
+  // Allow pressing Enter to send
+  userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      sendBtn.click();
+    }
+  });
+});
+</script>
+<script>
+const insights = {
+  sleep: [
+    { title: "Avoid caffeine after 5 PM", text: "Caffeine delays melatonin and can reduce your deep sleep." },
+    { title: "Set a fixed bedtime", text: "Going to bed at the same time helps regulate your sleep cycle." }
+  ],
+  meals: [
+    { title: "Add greens to lunch", text: "Leafy vegetables improve digestion and boost vitamins." },
+    { title: "Stay hydrated before meals", text: "Drinking water aids metabolism and portion control." }
+  ],
+  mood: [
+    { title: "Go for a short walk", text: "Physical activity releases endorphins that improve mood." },
+    { title: "Practice gratitude", text: "Listing 3 things you’re grateful for improves positivity." }
+  ]
+};
+
+// Show category cards
+function showCategory(category) {
+  const resultsDiv = document.getElementById('searchResults');
+  const data = insights[category] || [];
+  resultsDiv.innerHTML = data.map(item => `
+    <div class="result-card">
+      <h4>${item.title}</h4>
+      <p>${item.text}</p>
+    </div>
+  `).join('');
+}
+
+// Filter logic
+document.getElementById('filter').addEventListener('change', (e) => {
+  const val = e.target.value;
+  if (val === 'all') {
+    document.getElementById('searchResults').innerHTML = `<p>Try searching or choose a filter to see insights!</p>`;
+  } else {
+    showCategory(val);
+  }
+});
+
+// Voice Search
+const voiceBtn = document.getElementById('voiceBtn');
+const searchInput = document.getElementById('searchInput');
+if ('webkitSpeechRecognition' in window) {
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = "en-US";
+
+  voiceBtn.onclick = () => {
+    recognition.start();
+  };
+
+  recognition.onresult = (event) => {
+    const voiceText = event.results[0][0].transcript.toLowerCase();
+    searchInput.value = voiceText;
+
+    if (voiceText.includes('sleep')) showCategory('sleep');
+    else if (voiceText.includes('meal') || voiceText.includes('food')) showCategory('meals');
+    else if (voiceText.includes('mood')) showCategory('mood');
+    else document.getElementById('searchResults').innerHTML = `<p>No results found for "${voiceText}"</p>`;
+  };
+} else {
+  voiceBtn.style.display = 'none';
+  console.warn("Voice recognition not supported on this browser.");
+}
+</script>
+<script>
+/* Small, robust search handlers for the cleaned search tab */
+document.addEventListener('DOMContentLoaded', () => {
+  const voiceBtn = document.getElementById('voiceBtn');
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const filter = document.getElementById('filter');
+  const subFilter = document.getElementById('subFilter');
+  const clearFilters = document.getElementById('clearFilters');
+  const resultsDiv = document.getElementById('searchResults');
+
+  const insights = {
+    sleep: [
+      { title: "Avoid caffeine after 5 PM", text: "Caffeine delays melatonin and can reduce deep sleep." },
+      { title: "Set a fixed bedtime", text: "Going to bed at the same time helps regulate sleep." }
+    ],
+    meals: [
+      { title: "Add greens to lunch", text: "Leafy greens improve digestion and add vitamins." },
+      { title: "Hydrate before meals", text: "Drinking water before meals can help portion control." }
+    ],
+    mood: [
+      { title: "Go for a short walk", text: "Physical activity releases endorphins that improve mood." },
+      { title: "Practice gratitude", text: "Listing 3 things you’re grateful for improves positivity." }
+    ],
+    hydration: [
+      { title: "Sip water regularly", text: "Aim for small sips throughout the day for steady hydration." }
+    ],
+    exercise: [
+      { title: "Start small", text: "10 minutes of brisk walking can boost mood and energy." }
+    ]
+  };
+
+  window.showCategory = function(category) {
+    const data = insights[category] || [];
+    if (!data.length) {
+      resultsDiv.innerHTML = `<p style="opacity:0.8;">No quick insights for "${category}". Try another.</p>`;
+      return;
+    }
+    resultsDiv.innerHTML = data.map(item => `
+      <div class="result-card card" style="padding:10px;margin-bottom:10px;border-radius:10px;background:rgba(255,255,255,0.02);">
+        <h4 style="margin:0 0 6px 0;">${item.title}</h4>
+        <p style="margin:0;opacity:0.9;">${item.text}</p>
+      </div>
+    `).join('');
+  };
+
+  // Search button (simple keyword match)
+  searchBtn.addEventListener('click', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) {
+      resultsDiv.innerHTML = `<p style="opacity:0.8;">Type something to search, or use suggestions above ✨</p>`;
+      return;
+    }
+    // simple match across insights
+    const found = [];
+    Object.keys(insights).forEach(k => {
+      insights[k].forEach(item => {
+        if ((item.title + ' ' + item.text).toLowerCase().includes(q)) found.push({...item, cat:k});
+      });
+    });
+    if (found.length === 0) {
+      resultsDiv.innerHTML = `<p style="opacity:0.8;">No results for "${q}" — try a different keyword.</p>`;
+    } else {
+      resultsDiv.innerHTML = found.map(it => `
+        <div class="result-card card" style="padding:10px;margin-bottom:10px;border-radius:10px;background:rgba(255,255,255,0.02);">
+          <small style="opacity:0.7">${it.cat}</small>
+          <h4 style="margin:6px 0;">${it.title}</h4>
+          <p style="margin:0;">${it.text}</p>
+        </div>
+      `).join('');
+    }
+  });
+
+  // Clear filters
+  clearFilters.addEventListener('click', () => {
+    filter.value = 'all';
+    subFilter.value = '';
+    searchInput.value = '';
+    resultsDiv.innerHTML = `<p class="placeholder" style="opacity:0.7;">Start by typing, using voice, or choosing a suggestion above ✨</p>`;
+  });
+
+  // Filter change (category)
+  filter.addEventListener('change', (e) => {
+    const v = e.target.value;
+    if (v === 'all') {
+      resultsDiv.innerHTML = `<p style="opacity:0.8;">Try searching or choose a filter to see insights!</p>`;
+    } else {
+      showCategory(v);
+    }
+  });
+
+  // Voice search (if supported)
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognizer = new Rec();
+    recognizer.lang = 'en-IN';
+    recognizer.interimResults = false;
+
+    voiceBtn.addEventListener('click', () => {
+      recognizer.start();
+      voiceBtn.textContent = '🎙️ ...';
+    });
+
+    recognizer.onresult = (e) => {
+      const text = e.results[0][0].transcript;
+      searchInput.value = text;
+    };
+
+    recognizer.onerror = () => {
+      voiceBtn.textContent = '🎤';
+    };
+
+    recognizer.onend = () => {
+      voiceBtn.textContent = '🎤';
+    };
+  } else {
+    voiceBtn.addEventListener('click', () => {
+      alert('Voice search not supported in this browser.');
+    });
+  }
+});
+</script>
+
+</body>
+</html>

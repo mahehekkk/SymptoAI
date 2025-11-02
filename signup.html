@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SymptoAI | Sign Up</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <button id="themeToggle" class="btn secondary" style="position:absolute; top:20px; right:20px; width:auto; padding:8px 12px; font-size:12px;">
+      Toggle Theme
+    </button>
+
+    <div class="card">
+      <h1 class="logo">Sympto<span>AI</span></h1>
+      <p class="subtitle">Create your account</p>
+
+      <form id="signupForm">
+        <input type="email" id="signupEmail" placeholder="Email" required />
+
+        <div class="otp-row">
+          <input type="text" id="signupOtp" placeholder="Enter OTP (demo)" />
+          <button type="button" id="sendOtpBtn" class="btn otp-btn">Send OTP</button>
+        </div>
+
+        <input type="password" id="signupPassword" placeholder="Create Password" required />
+        <button type="submit" class="btn primary">Create Account</button>
+      </form>
+
+      <p class="bottom-text">Already have an account? <a href="index.html">Sign In</a></p>
+    </div>
+  </div>
+<script>
+  alert("✅ Script loaded!");
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const sendOtpBtn = document.getElementById("sendOtpBtn");
+  const emailInput = document.getElementById("signupEmail");
+
+  if (!sendOtpBtn) {
+    alert("❌ Button not found in DOM");
+    return;
+  }
+
+  sendOtpBtn.addEventListener("click", function () {
+    const email = emailInput.value.trim();
+    if (!email) {
+      alert("Enter email first");
+      return;
+    }
+    const otp = Math.floor(1000 + Math.random() * 9000);
+    alert("Mock OTP: " + otp);
+  });
+});
+</script>
+
+  <script src="script.js"></script>
+</body>
+</html>
